@@ -3,107 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Parking Management System</title>
+    <title>ParkPulse — Intelligent Parking Operations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 20px; }
-        h1, h2 { text-align: center; color: #333; }
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin: 20px 0; }
-        .slot { padding: 20px; border-radius: 8px; text-align: center; font-weight: bold; color: white; }
-        .available { background-color: #2ec4b6; }
-        .occupied { background-color: #e71d36; }
-        .panel { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 12px; }
-        input[type="text"] { padding: 8px; width: 70%; max-width: 250px; }
-        button { padding: 8px 16px; background-color: #011627; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #ff9f1c; }
-        .alert { padding: 10px; margin-top: 10px; border-radius: 4px; display: none; }
-        .alert-info { background-color: #e0f7fa; color: #006064; }
+        :root {
+            --bg: #0b0f17;
+            --surface: #151c28;
+            --surface-hover: #1e2738;
+            --border: #232d3f;
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.25);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            --text: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), #818cf8); border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: 20px; }
+        .brand h1 { font-size: 22px; font-weight: 700; }
+        .badge-live { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px; font-size: 13px; color: var(--success); }
+        .dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+        .metric-card p { color: var(--text-muted); font-size: 13px; font-weight: 500; }
+        .metric-card h2 { font-size: 28px; font-weight: 700; margin-top: 8px; }
+
+        .main-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+        @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
+
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+        .panel-title { font-size: 16px; font-weight: 600; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
+
+        .parking-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+        .slot-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 12px; text-align: center; transition: all 0.2s ease; position: relative; }
+        .slot-box.available { border-color: var(--success); background: var(--success-glow); }
+        .slot-box.occupied { border-color: var(--danger); background: var(--danger-glow); }
+        .slot-name { font-size: 16px; font-weight: 700; }
+        .slot-status { font-size: 11px; text-transform: uppercase; margin-top: 4px; font-weight: 600; letter-spacing: 0.5px; }
+
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+        input[type="text"] { width: 100%; background: var(--bg); border: 1px solid var(--border); padding: 12px 14px; border-radius: 8px; color: #fff; font-size: 14px; outline: none; transition: border 0.2s; }
+        input[type="text"]:focus { border-color: var(--primary); }
+        
+        .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 14px var(--primary-glow); }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-success { background: var(--success); color: white; box-shadow: 0 4px 14px var(--success-glow); }
+
+        .bill-card { background: var(--bg); border: 1px dashed var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; display: none; }
+        .bill-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+        .bill-row.total { border-top: 1px solid var(--border); padding-top: 8px; font-weight: 700; font-size: 16px; color: var(--success); }
+
+        .session-list { list-style: none; }
+        .session-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .session-item:last-child { border-bottom: none; }
+        .session-info { font-size: 13px; }
+        .session-plate { font-weight: 700; color: #fff; }
     </style>
 </head>
 <body>
-    <h1>Automated Parking Management System</h1>
-    
-    <h2>Real-Time Parking Availability Display</h2>
-    <div id="slot-grid" class="grid"></div>
-
-    <div style="display: flex; gap: 20px;">
-        <!-- Vehicle Arrival Module -->
-        <div class="panel" style="flex: 1;">
-            <h2>Vehicle Arrival Entry</h2>
-            <div class="form-group">
-                <input type="text" id="entry-plate" placeholder="Enter License Plate (e.g. KBC 123Z)">
-                <button onclick="handleEntry()">Record Entry</button>
+    <header class="header">
+        <div class="brand">
+            <div class="logo-icon">P</div>
+            <div>
+                <h1>ParkPulse Enterprise</h1>
+                <p style="font-size: 12px; color: var(--text-muted);">Smart Parking Operations & Toll Automation</p>
             </div>
-            <div id="entry-msg" class="alert alert-info"></div>
+        </div>
+        <div class="badge-live"><div class="dot"></div> Barrier Gate Services Online</div>
+    </header>
+
+    <section class="metrics-grid">
+        <div class="metric-card"><p>Total Spaces</p><h2 id="m-total">0</h2></div>
+        <div class="metric-card"><p>Available Bays</p><h2 id="m-avail" style="color: var(--success);">0</h2></div>
+        <div class="metric-card"><p>Occupied Bays</p><h2 id="m-occupied" style="color: var(--danger);">0</h2></div>
+        <div class="metric-card"><p>Today's Revenue</p><h2 id="m-revenue">Kshs. 0.00</h2></div>
+    </section>
+
+    <div class="main-layout">
+        <div>
+            <div class="panel">
+                <div class="panel-title">Real-Time Parking Matrix</div>
+                <div id="parking-grid" class="parking-grid"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Active Parking Sessions</div>
+                <ul id="active-sessions" class="session-list"></ul>
+            </div>
         </div>
 
-        <!-- Vehicle Exit & Fee Calculation Module -->
-        <div class="panel" style="flex: 1;">
-            <h2>Vehicle Exit & Payment</h2>
-            <div class="form-group">
-                <input type="text" id="exit-plate" placeholder="Enter License Plate">
-                <button onclick="calculateBill()">Calculate Fee</button>
+        <div>
+            <div class="panel">
+                <div class="panel-title">Vehicle Arrival (Entry Gate)</div>
+                <div class="form-group">
+                    <label>License Plate Number</label>
+                    <input type="text" id="entry-plate" placeholder="e.g. KBC 123Z" uppercase>
+                </div>
+                <button class="btn btn-primary" onclick="handleEntry()">Trigger Barrier & Assign Slot</button>
             </div>
-            <div id="exit-details" style="display:none;">
-                <p>Duration Spent: <span id="bill-duration"></span> mins</p>
-                <p>Total Fee: <strong>Kshs. <span id="bill-amount"></span></strong></p>
-                <button onclick="processPayment()">Pay Fee & Lift Exit Barrier</button>
+
+            <div class="panel">
+                <div class="panel-title">Vehicle Exit & Settlement</div>
+                <div class="form-group">
+                    <label>License Plate Number</label>
+                    <input type="text" id="exit-plate" placeholder="e.g. KBC 123Z">
+                </div>
+                <button class="btn btn-primary" style="background: var(--surface-hover); border: 1px solid var(--border);" onclick="fetchPreview()">Compute Duration & Toll</button>
+
+                <div id="bill-card" class="bill-card">
+                    <div class="bill-row"><span>Assigned Bay:</span><span id="bill-slot" style="font-weight: 700;"></span></div>
+                    <div class="bill-row"><span>Time Elapsed:</span><span id="bill-duration"></span> mins</div>
+                    <div class="bill-row total"><span>Amount Payable:</span><span>Kshs. <span id="bill-amount"></span></span></div>
+                    <button class="btn btn-success" style="margin-top: 12px;" onclick="processPayment()">Confirm Payment & Open Exit Barrier</button>
+                </div>
             </div>
-            <div id="exit-msg" class="alert alert-info"></div>
         </div>
     </div>
 
     <script>
         let currentSessionId = null;
 
-        async function fetchSlots() {
-            const res = await fetch('/api/slots');
-            const slots = await res.json();
-            const grid = document.getElementById('slot-grid');
-            grid.innerHTML = '';
-            slots.forEach(slot => {
-                const div = document.createElement('div');
-                div.className = `slot ${slot.status.toLowerCase()}`;
-                div.innerText = `${slot.slot_id}\n(${slot.status})`;
-                grid.appendChild(div);
-            });
+        async function updateDashboard() {
+            const [slotsRes, metricsRes, sessionsRes] = await Promise.all([
+                fetch('/api/slots'),
+                fetch('/api/metrics'),
+                fetch('/api/sessions/active')
+            ]);
+
+            const slots = await slotsRes.json();
+            const metrics = await metricsRes.json();
+            const sessions = await sessionsRes.json();
+
+            // Render Metrics
+            document.getElementById('m-total').innerText = metrics.total_slots;
+            document.getElementById('m-avail').innerText = metrics.available_slots;
+            document.getElementById('m-occupied').innerText = metrics.occupied_slots;
+            document.getElementById('m-revenue').innerText = `Kshs. ${metrics.today_revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+
+            // Render Grid
+            const grid = document.getElementById('parking-grid');
+            grid.innerHTML = slots.map(s => `
+                <div class="slot-box ${s.status.toLowerCase()}">
+                    <div class="slot-name">${s.slot_id}</div>
+                    <div class="slot-status">${s.status}</div>
+                </div>
+            `).join('');
+
+            // Render Active Sessions
+            const sessionList = document.getElementById('active-sessions');
+            if (sessions.length === 0) {
+                sessionList.innerHTML = '<li style="color: var(--text-muted); font-size: 13px;">No active vehicles parked.</li>';
+            } else {
+                sessionList.innerHTML = sessions.map(s => `
+                    <li class="session-item">
+                        <div class="session-info">
+                            <span class="session-plate">${s.license_plate}</span>
+                            <span style="color: var(--text-muted);"> — Slot ${s.slot_id}</span>
+                        </div>
+                        <span style="font-size: 12px; color: var(--text-muted);">${new Date(s.arrival_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </li>
+                `).join('');
+            }
         }
 
         async function handleEntry() {
-            const plate = document.getElementById('entry-plate').value;
+            const input = document.getElementById('entry-plate');
             const res = await fetch('/api/entry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ license_plate: plate })
+                body: JSON.stringify({ license_plate: input.value })
             });
             const data = await res.json();
-            const msgBox = document.getElementById('entry-msg');
-            msgBox.style.display = 'block';
-            msgBox.innerText = data.message || data.error;
-            document.getElementById('entry-plate').value = '';
-            fetchSlots();
+            if (res.ok) {
+                alert(data.message);
+                input.value = '';
+                updateDashboard();
+            } else {
+                alert(data.error);
+            }
         }
 
-        async function calculateBill() {
-            const plate = document.getElementById('exit-plate').value;
+        async function fetchPreview() {
+            const input = document.getElementById('exit-plate');
             const res = await fetch('/api/exit-preview', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ license_plate: plate })
+                body: JSON.stringify({ license_plate: input.value })
             });
             const data = await res.json();
-            const msgBox = document.getElementById('exit-msg');
-            
-            if (data.error) {
-                msgBox.style.display = 'block';
-                msgBox.innerText = data.error;
-                document.getElementById('exit-details').style.display = 'none';
-            } else {
-                msgBox.style.display = 'none';
+            if (res.ok) {
                 currentSessionId = data.session_id;
+                document.getElementById('bill-slot').innerText = data.slot_id;
                 document.getElementById('bill-duration').innerText = data.duration_minutes;
-                document.getElementById('bill-amount').innerText = data.amount_payable;
-                document.getElementById('exit-details').style.display = 'block';
+                document.getElementById('bill-amount').innerText = data.amount_payable.toFixed(2);
+                document.getElementById('bill-card').style.display = 'block';
+            } else {
+                alert(data.error);
+                document.getElementById('bill-card').style.display = 'none';
             }
         }
 
@@ -114,16 +220,18 @@
                 body: JSON.stringify({ session_id: currentSessionId })
             });
             const data = await res.json();
-            const msgBox = document.getElementById('exit-msg');
-            msgBox.style.display = 'block';
-            msgBox.innerText = data.message;
-            document.getElementById('exit-details').style.display = 'none';
-            document.getElementById('exit-plate').value = '';
-            fetchSlots();
+            if (res.ok) {
+                alert(data.message);
+                document.getElementById('bill-card').style.display = 'none';
+                document.getElementById('exit-plate').value = '';
+                updateDashboard();
+            } else {
+                alert(data.error);
+            }
         }
 
-        fetchSlots();
-        setInterval(fetchSlots, 5000); // Polling for real-time slot state
+        updateDashboard();
+        setInterval(updateDashboard, 4000);
     </script>
 </body>
 </html>
