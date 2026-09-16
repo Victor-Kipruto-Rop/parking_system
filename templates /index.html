@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking Management System</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 20px; }
+        h1, h2 { text-align: center; color: #333; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin: 20px 0; }
+        .slot { padding: 20px; border-radius: 8px; text-align: center; font-weight: bold; color: white; }
+        .available { background-color: #2ec4b6; }
+        .occupied { background-color: #e71d36; }
+        .panel { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 12px; }
+        input[type="text"] { padding: 8px; width: 70%; max-width: 250px; }
+        button { padding: 8px 16px; background-color: #011627; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #ff9f1c; }
+        .alert { padding: 10px; margin-top: 10px; border-radius: 4px; display: none; }
+        .alert-info { background-color: #e0f7fa; color: #006064; }
+    </style>
+</head>
+<body>
+    <h1>Automated Parking Management System</h1>
+    
+    <h2>Real-Time Parking Availability Display</h2>
+    <div id="slot-grid" class="grid"></div>
+
+    <div style="display: flex; gap: 20px;">
+        <!-- Vehicle Arrival Module -->
+        <div class="panel" style="flex: 1;">
+            <h2>Vehicle Arrival Entry</h2>
+            <div class="form-group">
+                <input type="text" id="entry-plate" placeholder="Enter License Plate (e.g. KBC 123Z)">
+                <button onclick="handleEntry()">Record Entry</button>
+            </div>
+            <div id="entry-msg" class="alert alert-info"></div>
+        </div>
+
+        <!-- Vehicle Exit & Fee Calculation Module -->
+        <div class="panel" style="flex: 1;">
+            <h2>Vehicle Exit & Payment</h2>
+            <div class="form-group">
+                <input type="text" id="exit-plate" placeholder="Enter License Plate">
+                <button onclick="calculateBill()">Calculate Fee</button>
+            </div>
+            <div id="exit-details" style="display:none;">
+                <p>Duration Spent: <span id="bill-duration"></span> mins</p>
+                <p>Total Fee: <strong>Kshs. <span id="bill-amount"></span></strong></p>
+                <button onclick="processPayment()">Pay Fee & Lift Exit Barrier</button>
+            </div>
+            <div id="exit-msg" class="alert alert-info"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+
+        async function fetchSlots() {
+            const res = await fetch('/api/slots');
+            const slots = await res.json();
+            const grid = document.getElementById('slot-grid');
+            grid.innerHTML = '';
+            slots.forEach(slot => {
+                const div = document.createElement('div');
+                div.className = `slot ${slot.status.toLowerCase()}`;
+                div.innerText = `${slot.slot_id}\n(${slot.status})`;
+                grid.appendChild(div);
+            });
+        }
+
+        async function handleEntry() {
+            const plate = document.getElementById('entry-plate').value;
+            const res = await fetch('/api/entry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ license_plate: plate })
+            });
+            const data = await res.json();
+            const msgBox = document.getElementById('entry-msg');
+            msgBox.style.display = 'block';
+            msgBox.innerText = data.message || data.error;
+            document.getElementById('entry-plate').value = '';
+            fetchSlots();
+        }
+
+        async function calculateBill() {
+            const plate = document.getElementById('exit-plate').value;
+            const res = await fetch('/api/exit-preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ license_plate: plate })
+            });
+            const data = await res.json();
+            const msgBox = document.getElementById('exit-msg');
+            
+            if (data.error) {
+                msgBox.style.display = 'block';
+                msgBox.innerText = data.error;
+                document.getElementById('exit-details').style.display = 'none';
+            } else {
+                msgBox.style.display = 'none';
+                currentSessionId = data.session_id;
+                document.getElementById('bill-duration').innerText = data.duration_minutes;
+                document.getElementById('bill-amount').innerText = data.amount_payable;
+                document.getElementById('exit-details').style.display = 'block';
+            }
+        }
+
+        async function processPayment() {
+            const res = await fetch('/api/pay-and-exit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentSessionId })
+            });
+            const data = await res.json();
+            const msgBox = document.getElementById('exit-msg');
+            msgBox.style.display = 'block';
+            msgBox.innerText = data.message;
+            document.getElementById('exit-details').style.display = 'none';
+            document.getElementById('exit-plate').value = '';
+            fetchSlots();
+        }
+
+        fetchSlots();
+        setInterval(fetchSlots, 5000); // Polling for real-time slot state
+    </script>
+</body>
+</html>
